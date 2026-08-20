@@ -1,5 +1,5 @@
 <#
-  Windows runner — the equivalent of `make <target>` for students without make.
+  Windows runner -- the equivalent of `make <target>` for students without make.
 
   Works in Windows PowerShell 5.1 (powershell.exe) and PowerShell 7+ (pwsh).
 
@@ -12,7 +12,7 @@
       .\lab.ps1 verify
 
   Every target maps 1:1 to the make target of the same name, so GUIDE.md applies
-  as written — just substitute `.\lab.ps1 x` for `make x`.
+  as written -- just substitute `.\lab.ps1 x` for `make x`.
 #>
 param(
     [Parameter(Position = 0)] [string] $Target = "help",
@@ -24,7 +24,14 @@ Set-Location $PSScriptRoot
 
 $VenvPy = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 $Port   = if ($env:LAB_SERVER_PORT) { $env:LAB_SERVER_PORT } else { '8080' }
-$SysPy  = 'python'
+$SysPy  = if (Get-Command python -ErrorAction SilentlyContinue) {
+    (Get-Command python -CommandType Application | Select-Object -First 1).Source
+} elseif (Get-Command py -ErrorAction SilentlyContinue) {
+    (Get-Command py -CommandType Application | Select-Object -First 1).Source
+} else {
+    Write-Host "ERROR: Python 3 was not found. Install Python 3.10+ and re-run this command." -ForegroundColor Red
+    exit 1
+}
 
 function Need-Venv {
     if (-not (Test-Path $VenvPy)) {
@@ -45,7 +52,7 @@ function Locust {
 switch ($Target) {
     'help' {
         Write-Host ""
-        Write-Host "Day 20 lab — Windows runner" -ForegroundColor Cyan
+        Write-Host "Day 20 lab -- Windows runner" -ForegroundColor Cyan
         Write-Host "Usage:  .\lab.ps1 <target>"
         Write-Host ""
         Write-Host "Setup (00)"

@@ -66,10 +66,26 @@ def main() -> int:
         print(f"  endpoints: http://localhost:{port}/v1/embeddings")
     print(f"\n  {' '.join(cmd)}\n")
 
+    # On POSIX, exec hands the terminal directly to llama-server.  On Windows,
+    # os.execv() can return control to PowerShell while leaving llama-server alive,
+    # so Ctrl-C appears to work but the orphan keeps the port and Vulkan memory.
+    if os.name != "nt":
+        try:
+            os.execv(cmd[0], cmd)
+        except OSError:
+            return subprocess.run(cmd, check=False).returncode
+
+    proc = subprocess.Popen(cmd)
     try:
-        os.execv(cmd[0], cmd)          # hand the terminal over; Ctrl-C stops the server
-    except OSError:
-        return subprocess.run(cmd, check=False).returncode
+        return proc.wait()
+    except KeyboardInterrupt:
+        proc.terminate()
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+        return 130
 
 
 if __name__ == "__main__":
